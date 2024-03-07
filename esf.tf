@@ -1,5 +1,8 @@
 ###### Elastic Serverless Forwarder
 locals {
+  esf_github_url = "https://github.com/elastic/elastic-serverless-forwarder/archive/refs/tags/${var.release-version}.tar.gz"
+  esf_source_zip  = "esf-downloaded-src-${md5(local.esf_github_url)}.tar.gz"
+
   attach_network_policy = (var.vpc != null ? true : false)
 
   s3-url-config-file = "s3://${split(":", var.config-file)[length(split(":", var.config-file))-1]}"
@@ -47,11 +50,20 @@ locals {
   )
 }
 
-data "external" "esf_lambda_loader" {
-  program = ["${path.module}/esf-loader.sh"]
+resource "null_resource" "esf-download-source-zip" {
+  triggers = {
+    esf_source_zip = local.esf_source_zip
+  }
 
-  query = {
-    version = var.release-version
+  provisioner "local-exec" {
+    command = "mkdir -p build; curl -L -o build/${local.esf_source_zip} ${local.esf_github_url}; cd build; rm -rf elastic-serverless-forwarder-${var.release-version}; tar xzvf ${local.esf_source_zip}"
+  }
+}
+
+data "null_data_source" "esf-source-path" {
+  inputs = {
+    id          = null_resource.esf-download-source-zip.id
+    source_path = "build/elastic-serverless-forwarder-${var.release-version}"
   }
 }
 
@@ -62,13 +74,31 @@ module "esf-lambda-function" {
   function_name                  = var.lambda-name
   handler                        = "main_aws.lambda_handler"
   runtime                        = "python3.9"
-  build_in_docker                = true
   architectures                  = ["x86_64"]
   docker_pip_cache               = true
   memory_size                    = 512
   timeout                        = 900
   docker_additional_options      = ["--platform", "linux/amd64"]
-  source_path                    = data.external.esf_lambda_loader.result.package
+
+  create_package                 = true
+  build_in_docker                = true
+
+  source_path = [
+    {
+      path = data.null_data_source.esf-source-path.outputs["source_path"],
+      commands = [
+        "rm -rf ./_tmp",
+        "mkdir -p ./_tmp",
+        "cp -v main_aws.py ./_tmp/main_aws.py",
+        "find {handlers,share,shippers,storage} -not -name \"*__pycache__*\" -type d -print0|xargs -t -0 -Idirname mkdir -v -p \"./_tmp/dirname\"",
+        "find {handlers,share,shippers,storage} -not -name \"*__pycache__*\" -name \"*.py\" -type -f -exec cp -v '{}' \"./_tmp/{}\" \\;",
+        "pip install --target=./_tmp/ -r requirements.txt",
+        ":zip .",
+        "rm -rf ./_tmp",
+      ]
+    }
+  ]
+
   environment_variables = {
     S3_CONFIG_FILE : local.s3-url-config-file
     SQS_CONTINUE_URL : aws_sqs_queue.esf-continuing-queue.url
@@ -106,8 +136,6 @@ module "esf-lambda-function" {
     local.s3-buckets,
     local.ec2
   )
-
-  depends_on = [data.external.esf_lambda_loader]
 
   use_existing_cloudwatch_log_group = false
 }
