@@ -9,7 +9,7 @@ variable "release-version" {
 }
 
 variable "config-file" {
-  description = "ARN of to the location of config.yaml for ESF in S3"
+  description = "The ARN of the S3 bucket containing config.yaml file"
   type = string
 }
 
@@ -25,13 +25,9 @@ variable "log_level" {
 }
 
 variable "cloudwatch-logs" {
-  description = "List of Cloudwatch Logs to add a Subscription Filters for to ESF"
-  type = list(object({
-    arn = string
-  }))
-  default = [{
-    arn = ""
-  }]
+  description = "List of Cloudwatch log group ARNs to add a Subscription Filters for to ESF"
+  type = list(string)
+  default = []
 }
 
 variable "kinesis-data-stream" {
