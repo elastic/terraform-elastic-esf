@@ -147,19 +147,19 @@ resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-s3-sqs" {
 }
 
 resource "aws_lambda_permission" "esf-cloudwatch-logs-invoke-function-permission" {
-  for_each = { for cloudwatch-logs in var.cloudwatch-logs: cloudwatch-logs => cloudwatch-logs }
+  for_each = { for cloudwatch-logs in var.cloudwatch-logs: cloudwatch-logs.arn => cloudwatch-logs }
   action        = "lambda:InvokeFunction"
   function_name = module.esf-lambda-function.lambda_function_name
-  principal     = "logs.${split(":", each.value)[3]}.amazonaws.com"
-  source_arn    = each.value
+  principal     = "logs.${split(":", each.value.arn)[3]}.amazonaws.com"
+  source_arn    = each.value.arn
 }
 
 resource "aws_cloudwatch_log_subscription_filter" "esf-cloudwatch-log-subscription-filter" {
-  for_each = { for cloudwatch-logs in var.cloudwatch-logs: cloudwatch-logs => cloudwatch-logs }
-  name            = split(":", each.value)[6]
+  for_each = { for cloudwatch-logs in var.cloudwatch-logs: cloudwatch-logs.arn => cloudwatch-logs }
+  name            = split(":", each.value.arn)[6]
   destination_arn = module.esf-lambda-function.lambda_function_arn
   filter_pattern  = ""
-  log_group_name  = split(":", each.value)[6]
+  log_group_name  = split(":", each.value.arn)[6]
   depends_on = [aws_lambda_permission.esf-cloudwatch-logs-invoke-function-permission]
 }
 

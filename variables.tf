@@ -26,8 +26,12 @@ variable "log_level" {
 
 variable "cloudwatch-logs" {
   description = "List of Cloudwatch log group ARNs to add a Subscription Filters for to ESF"
-  type = list(string)
-  default = []
+  type = list(object({
+    arn = string
+  }))
+  default = [{
+    arn = ""
+  }]
 }
 
 variable "kinesis-data-stream" {
