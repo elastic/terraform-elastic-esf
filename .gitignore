@@ -41,3 +41,9 @@ terraform.rc
 
 #MacOS
 .DS_Store
+
+# Directories
+.idea/
+
+# lock file
+.terraform.lock.hcl
