@@ -86,23 +86,7 @@ module "esf-lambda-function" {
   create_package                 = true
   build_in_docker                = true
 
-  source_path = [
-    {
-      path = data.null_data_source.esf-source-path.outputs["source_path"],
-      commands = [
-        "rm -rf ./_tmp",
-        "mkdir -p ./_tmp",
-        "cp -v main_aws.py ./_tmp/main_aws.py",
-        "find {handlers,share,shippers,storage} -not -name \"*__pycache__*\" -type d -print0|xargs -t -0 -Idirname mkdir -v -p \"./_tmp/dirname\"",
-        "find {handlers,share,shippers,storage} -not -name \"*__pycache__*\" -name \"*.py\" -type f -exec cp -v '{}' \"./_tmp/{}\" \\;",
-        "pip install --target=./_tmp/ -r requirements.txt",
-        "cd ./_tmp",
-        ":zip .",
-        "cd ..",
-        "rm -rf ./_tmp",
-      ]
-    }
-  ]
+  source_path = data.null_data_source.esf-source-path.outputs["source_path"]
 
   environment_variables = {
     S3_CONFIG_FILE : local.s3-url-config-file
