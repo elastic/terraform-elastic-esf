@@ -7,7 +7,7 @@ locals {
 
   s3-url-config-file = "s3://${split(":", var.config-file)[length(split(":", var.config-file))-1]}"
 
-  kinesis-data-stream = (length(var.kinesis-data-stream) > 0 ? {
+  kinesis-data-stream = (length([for kinesis-data-stream in var.kinesis-data-stream: kinesis-data-stream.arn if length(kinesis-data-stream.arn) > 0]) > 0 ? {
     kinesis-data-stream = { effect = "Allow", actions = [
       "kinesis:DescribeStream",
       "kinesis:DescribeStreamSummary",
@@ -19,12 +19,15 @@ locals {
     ], resources = [for kinesis-data-stream in var.kinesis-data-stream: kinesis-data-stream.arn] }
   } : {})
 
-  sqs = (length(var.sqs) > 0 ? {
+  sqs = (length([for sqs in var.sqs: sqs.arn if length(sqs.arn) > 0]) > 0 ? {
     sqs = { effect = "Allow", actions = [
       "sqs:ReceiveMessage",
       "sqs:DeleteMessage",
       "sqs:GetQueueAttributes"
-    ], resources = [for sqs in var.sqs: sqs.arn] },
+    ], resources = [for sqs in var.sqs: sqs.arn] }
+  } : {})
+
+  s3-sqs = (length([for s3-sqs in var.s3-sqs: s3-sqs.arn if length(s3-sqs.arn) > 0]) > 0 ? {
     s3-sqs = { effect = "Allow", actions = [
       "sqs:ReceiveMessage",
       "sqs:DeleteMessage",
@@ -93,6 +96,7 @@ module "esf-lambda-function" {
         "find {handlers,share,shippers,storage} -not -name \"*__pycache__*\" -type d -print0|xargs -t -0 -Idirname mkdir -v -p \"./_tmp/dirname\"",
         "find {handlers,share,shippers,storage} -not -name \"*__pycache__*\" -name \"*.py\" -type -f -exec cp -v '{}' \"./_tmp/{}\" \\;",
         "pip install --target=./_tmp/ -r requirements.txt",
+        "cd ./_tmp",
         ":zip .",
         "rm -rf ./_tmp",
       ]
@@ -130,6 +134,7 @@ module "esf-lambda-function" {
       }
     },
     local.kinesis-data-stream,
+    local.s3-sqs,
     local.sqs,
     local.ssm-secrets,
     local.kms-keys,
@@ -142,7 +147,7 @@ module "esf-lambda-function" {
 
 
 resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-kinesis-data-stream" {
-  for_each = { for kinesis-data-stream in var.kinesis-data-stream: kinesis-data-stream.arn => kinesis-data-stream }
+  for_each = { for kinesis-data-stream in var.kinesis-data-stream: kinesis-data-stream.arn => kinesis-data-stream if length(kinesis-data-stream.arn) > 0 }
   event_source_arn                   = each.value.arn
   function_name                      = module.esf-lambda-function.lambda_function_arn
   batch_size                         = each.value.batch_size
@@ -155,7 +160,7 @@ resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-kinesis-dat
 }
 
 resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-sqs" {
-  for_each = { for sqs in var.sqs: sqs.arn => sqs }
+  for_each = { for sqs in var.sqs: sqs.arn => sqs if length(sqs.arn) > 0 }
   event_source_arn                   = each.value.arn
   function_name                      = module.esf-lambda-function.lambda_function_arn
   batch_size                         = each.value.batch_size
@@ -165,7 +170,7 @@ resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-sqs" {
 }
 
 resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-s3-sqs" {
-  for_each = { for s3-sqs in var.s3-sqs: s3-sqs.arn => s3-sqs }
+  for_each = { for s3-sqs in var.s3-sqs: s3-sqs.arn => s3-sqs if length(s3-sqs.arn) > 0 }
   event_source_arn                   = each.value.arn
   function_name                      = module.esf-lambda-function.lambda_function_arn
   batch_size                         = each.value.batch_size
@@ -175,7 +180,7 @@ resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-s3-sqs" {
 }
 
 resource "aws_lambda_permission" "esf-cloudwatch-logs-invoke-function-permission" {
-  for_each = { for cloudwatch-logs in var.cloudwatch-logs: cloudwatch-logs.arn => cloudwatch-logs }
+  for_each = { for cloudwatch-logs in var.cloudwatch-logs: cloudwatch-logs.arn => cloudwatch-logs if length(cloudwatch-logs.arn) > 0 }
   action        = "lambda:InvokeFunction"
   function_name = module.esf-lambda-function.lambda_function_name
   principal     = "logs.${split(":", each.value.arn)[3]}.amazonaws.com"
@@ -183,7 +188,7 @@ resource "aws_lambda_permission" "esf-cloudwatch-logs-invoke-function-permission
 }
 
 resource "aws_cloudwatch_log_subscription_filter" "esf-cloudwatch-log-subscription-filter" {
-  for_each = { for cloudwatch-logs in var.cloudwatch-logs: cloudwatch-logs.arn => cloudwatch-logs }
+  for_each = { for cloudwatch-logs in var.cloudwatch-logs: cloudwatch-logs.arn => cloudwatch-logs if length(cloudwatch-logs.arn) > 0 }
   name            = split(":", each.value.arn)[6]
   destination_arn = module.esf-lambda-function.lambda_function_arn
   filter_pattern  = ""
