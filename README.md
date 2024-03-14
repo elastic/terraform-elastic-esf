@@ -6,8 +6,8 @@ This repository contains sample Terraform code designed to automate the provisio
 
 Since this module executes a script ensure your machine has the following software available:
 
-* git
-* jq
+* curl
+* tar
 
 ## How to use
 
