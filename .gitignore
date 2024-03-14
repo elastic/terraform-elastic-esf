@@ -43,3 +43,8 @@ terraform.rc
 .DS_Store
 
 build
+# Directories
+.idea/
+
+# lock file
+.terraform.lock.hcl
