@@ -5,12 +5,12 @@ variable "lambda-name" {
 
 variable "release-version" {
   description = "ESF release version"
-  type = string
+  type        = string
 }
 
-variable "config-file" {
+variable "config-file-bucket" {
   description = "The ARN of the S3 bucket containing config.yaml file"
-  type = string
+  type        = string
 }
 
 variable "aws_region" {
@@ -37,33 +37,33 @@ variable "cloudwatch-logs" {
 variable "kinesis-data-stream" {
   description = "List of Kinesis Data Stream to add an Event Source for to ESF"
   type = list(object({
-    arn = string
-    batch_size = optional(number, 10)
-    starting_position = optional(string, "TRIM_HORIZON")
+    arn                         = string
+    batch_size                  = optional(number, 10)
+    starting_position           = optional(string, "TRIM_HORIZON")
     starting_position_timestamp = optional(number)
-    batching_window_in_second = optional(number, 0)
-    parallelization_factor = optional(number, 1)
+    batching_window_in_second   = optional(number, 0)
+    parallelization_factor      = optional(number, 1)
   }))
   default = [{
-    arn = ""
-    batch_size = 10
-    starting_position = "TRIM_HORIZON"
+    arn                         = ""
+    batch_size                  = 10
+    starting_position           = "TRIM_HORIZON"
     starting_position_timestamp = null
-    batching_window_in_second = 0
-    parallelization_factor = 1
+    batching_window_in_second   = 0
+    parallelization_factor      = 1
   }]
 }
 
 variable "sqs" {
   description = "List of Direct SQS queues to add an Event Source for to ESF"
   type = list(object({
-    arn = string
-    batch_size = optional(number, 10)
+    arn                       = string
+    batch_size                = optional(number, 10)
     batching_window_in_second = optional(number, 0)
   }))
   default = [{
-    arn = ""
-    batch_size = 10
+    arn                       = ""
+    batch_size                = 10
     batching_window_in_second = 0
   }]
 }
@@ -71,55 +71,55 @@ variable "sqs" {
 variable "s3-sqs" {
   description = "List of S3 SQS Event Notifications queues to add an Event Source for to ESF"
   type = list(object({
-    arn = string
-    batch_size = optional(number, 10)
+    arn                       = string
+    batch_size                = optional(number, 10)
     batching_window_in_second = optional(number, 0)
   }))
   default = [{
-    arn = ""
-    batch_size = 10
+    arn                       = ""
+    batch_size                = 10
     batching_window_in_second = 0
   }]
 }
 
 variable "kms-keys" {
   description = "List of KMS Keys ARNs to be used for decrypting AWS SSM Secrets, Kinesis Data Streams, SQS queue, or S3 buckets"
-  type = list(string)
-  default = []
+  type        = list(string)
+  default     = []
 }
 
 variable "ssm-secrets" {
   description = "List of SSM Secrets ARNs used in the config.yml"
-  type = list(string)
-  default = []
+  type        = list(string)
+  default     = []
 }
 
 variable "s3-buckets" {
   description = "List of S3 bucket ARNs that are sources for the S3 SQS Event Notifications"
-  type = list(string)
-  default = []
+  type        = list(string)
+  default     = []
 }
 
 variable "vpc" {
   description = "VPC to attach ESF to, identified by the list of its security group IDs and subnet IDs"
   type = object({
     security-groups = list(string)
-    subnets = list(string)
+    subnets         = list(string)
   })
   default = {
     security-groups = []
-    subnets = []
+    subnets         = []
   }
 }
 
 variable "continuing-queue" {
   description = "Custom BatchSize and MaximumBatchingWindowInSeconds for the ESF SQS Continuing queue"
   type = object({
-    batch_size = optional(number, 10)
+    batch_size                = optional(number, 10)
     batching_window_in_second = optional(number, 0)
   })
   default = {
-    batch_size = 10
+    batch_size                = 10
     batching_window_in_second = 0
   }
 }
