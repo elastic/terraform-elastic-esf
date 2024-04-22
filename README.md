@@ -2,13 +2,6 @@
 
 This repository contains sample Terraform code designed to automate the provisioning of AWS resources necessary for deploying of Elastic Serverless Forwarder (ESF)
 
-## Prerequisites
-
-Since this module executes a script ensure your machine has the following software available:
-
-* curl
-* tar
-
 ## How to use
 
 * Define secrets and variables in `*.auto.tfvars` files (See `variables.tf` for the list of variables declared)
