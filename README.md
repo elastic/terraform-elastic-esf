@@ -29,8 +29,7 @@ Since this module executes a script ensure your machine has the following softwa
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | ~> 5.14.0 |
-| <a name="provider_null"></a> [null](#provider\_null) | n/a |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 5.14.0 |
 
 ## Modules
 
@@ -54,7 +53,6 @@ Since this module executes a script ensure your machine has the following softwa
 | [aws_sqs_queue.esf-replay-queue-dlq](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sqs_queue) | resource |
 | [aws_sqs_queue_redrive_allow_policy.esf-continuing-queue-dlq-redrive-allow-policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sqs_queue_redrive_allow_policy) | resource |
 | [aws_sqs_queue_redrive_allow_policy.esf-replay-queue-dlq-redrive-allow-policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sqs_queue_redrive_allow_policy) | resource |
-| [null_resource.esf-download-source-zip](https://registry.terraform.io/providers/hashicorp/null/latest/docs/resources/resource) | resource |
 
 ## Inputs
 
@@ -68,7 +66,7 @@ Since this module executes a script ensure your machine has the following softwa
 | <a name="input_kms-keys"></a> [kms-keys](#input\_kms-keys) | List of KMS Keys ARNs to be used for decrypting AWS SSM Secrets, Kinesis Data Streams, SQS queue, or S3 buckets | `list(string)` | `[]` | no |
 | <a name="input_lambda-name"></a> [lambda-name](#input\_lambda-name) | ESF Lambda function name | `string` | n/a | yes |
 | <a name="input_log_level"></a> [log\_level](#input\_log\_level) | Log level for ESF | `string` | `"INFO"` | no |
-| <a name="input_release-version"></a> [release-version](#input\_release-version) | ESF release version | `string` | n/a | yes |
+| <a name="input_release-version"></a> [release-version](#input\_release-version) | ESF release version. You can find the possible values in https://github.com/elastic/elastic-serverless-forwarder/tags. | `string` | n/a | yes |
 | <a name="input_s3-buckets"></a> [s3-buckets](#input\_s3-buckets) | List of S3 bucket ARNs that are sources for the S3 SQS Event Notifications | `list(string)` | `[]` | no |
 | <a name="input_s3-sqs"></a> [s3-sqs](#input\_s3-sqs) | List of S3 SQS Event Notifications queues to add an Event Source for to ESF | <pre>list(object({<br>    arn                       = string<br>    batch_size                = optional(number, 10)<br>    batching_window_in_second = optional(number, 0)<br>  }))</pre> | <pre>[<br>  {<br>    "arn": "",<br>    "batch_size": 10,<br>    "batching_window_in_second": 0<br>  }<br>]</pre> | no |
 | <a name="input_sqs"></a> [sqs](#input\_sqs) | List of Direct SQS queues to add an Event Source for to ESF | <pre>list(object({<br>    arn                       = string<br>    batch_size                = optional(number, 10)<br>    batching_window_in_second = optional(number, 0)<br>  }))</pre> | <pre>[<br>  {<br>    "arn": "",<br>    "batch_size": 10,<br>    "batching_window_in_second": 0<br>  }<br>]</pre> | no |

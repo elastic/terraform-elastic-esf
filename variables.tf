@@ -4,7 +4,7 @@ variable "lambda-name" {
 }
 
 variable "release-version" {
-  description = "ESF release version"
+  description = "ESF release version. You can find the possible values in https://github.com/elastic/elastic-serverless-forwarder/tags."
   type        = string
 }
 
