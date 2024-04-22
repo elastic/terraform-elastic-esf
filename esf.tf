@@ -1,7 +1,7 @@
 ###### Elastic Serverless Forwarder
 locals {
-  esf_github_url = "https://github.com/elastic/elastic-serverless-forwarder/archive/refs/tags/${var.release-version}.tar.gz"
-  esf_source_zip = "esf-downloaded-src-${md5(local.esf_github_url)}.tar.gz"
+  dependencies-bucket = "esf-dependencies-wu5oznr6fhmsquw933rjgo3rzgxqoeuc1a-s3alias"
+  dependencies-file   = "${var.release-version}.zip"
 
   attach_network_policy = (var.vpc != null ? true : false)
 
@@ -52,41 +52,22 @@ locals {
     ec2 = { effect = "Allow", actions = ["ec2:DescribeRegions"], resources = ["*"] } } : {}
   )
 
-  # This is created from esf-download-source-zip
-  source_path = "build/elastic-serverless-forwarder-${var.release-version}"
 }
-
-
-resource "null_resource" "esf-download-source-zip" {
-  triggers = {
-    esf_source_zip = local.esf_source_zip
-  }
-
-  provisioner "local-exec" {
-    command = "mkdir -p build; curl -L -o build/${local.esf_source_zip} ${local.esf_github_url}; cd build; rm -rf elastic-serverless-forwarder-${var.release-version}; tar xzvf ${local.esf_source_zip}"
-
-  }
-}
-
-
 
 module "esf-lambda-function" {
   source  = "terraform-aws-modules/lambda/aws"
   version = "6.0.0"
 
-  function_name             = var.lambda-name
-  handler                   = "main_aws.lambda_handler"
-  runtime                   = "python3.9"
-  architectures             = ["x86_64"]
-  docker_pip_cache          = true
-  memory_size               = 512
-  timeout                   = 900
-  docker_additional_options = ["--platform", "linux/amd64"]
+  function_name = var.lambda-name
+  handler       = "main_aws.lambda_handler"
+  runtime       = "python3.9"
+  architectures = ["x86_64"]
 
-  create_package  = true
-  build_in_docker = true
-
-  source_path = local.source_path
+  create_package = false
+  s3_existing_package = {
+    bucket = local.dependencies-bucket
+    key    = local.dependencies-file
+  }
 
   environment_variables = {
     S3_CONFIG_FILE : "${local.s3-url-config-file}/config.yaml"
@@ -128,11 +109,7 @@ module "esf-lambda-function" {
   )
 
   use_existing_cloudwatch_log_group = false
-
-  # The source_path needs to exist, so we need to wait for the esf download
-  depends_on = [null_resource.esf-download-source-zip]
 }
-
 
 resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-kinesis-data-stream" {
   for_each                           = { for kinesis-data-stream in var.kinesis-data-stream : kinesis-data-stream.arn => kinesis-data-stream if length(kinesis-data-stream.arn) > 0 }
