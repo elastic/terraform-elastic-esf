@@ -166,7 +166,7 @@ module "esf-lambda-function" {
       config-file = {
         effect    = "Allow",
         actions   = ["s3:GetObject"],
-        resources = ["arn:aws:s3:::${local.config-file-bucket-name}/config.yaml"] // TEM DE SER ARN, CORRIGIR
+        resources = ["arn:aws:s3:::${local.config-file-bucket-name}/config.yaml"]
       },
       internal-queues = {
         effect    = "Allow",
