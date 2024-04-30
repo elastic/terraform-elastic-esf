@@ -20,14 +20,14 @@ variable "log_level" {
 }
 
 variable "config-file-bucket" {
-  description = "The ARN of the S3 bucket to place the config.yaml file. If none given, new bucket will be created."
+  description = "The ARN of the S3 bucket to place the config.yaml file. It should exist. Otherwise, if the variable is left empty, a new bucket will be created."
   type        = string
   default     = ""
 }
 
 variable "config-file-local-path" {
   description = <<EOT
-Local path to the configuration file. If none given, make sure to set inputs variable.
+Local path to the configuration file. Define this variable only if you want to specify the local configuration file. If none given, make sure to set inputs variable.
 You can find instructions on how to set the configuration file in https://www.elastic.co/guide/en/esf/current/aws-deploy-elastic-serverless-forwarder.html#sample-s3-config-file.
 EOT
   type        = string
