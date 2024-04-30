@@ -12,7 +12,7 @@ This repository contains all necessary resources to deploy ESF.
 # variables.auto.tfvars
 lambda-name            = "my-esf-lambda"
 release-version        = "lambda-v1.9.0"
-config-file-bucket     = "arn:aws:s3:::my-esf-bucket"
+# config-file-bucket     = "arn:aws:s3:::my-esf-bucket" # Uncomment if s3 bucket pre-exists
 aws_region             = "eu-central-1"
 # config-file-local-path = "./config.yaml" # Uncomment if local config path is used
 ```
