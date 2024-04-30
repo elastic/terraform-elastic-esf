@@ -15,7 +15,24 @@ release-version        = "lambda-v1.9.0"
 # config-file-bucket     = "arn:aws:s3:::my-esf-bucket" # Uncomment if s3 bucket pre-exists
 aws_region             = "eu-central-1"
 # config-file-local-path = "./config.yaml" # Uncomment if local config path is used
-```
+# See below for more details on how to configure inputs[]
+inputs = [
+  {
+    type = "cloudwatch-logs"
+    id   = "<some_arn>"
+    outputs = [
+      {
+        type = "elasticsearch"
+        args = {
+          elasticsearch_url  = "https://url.com"
+          api_key            = "<some_api_key>"
+          es_datastream_name = "logs-esf.cloudwatch-default"
+        }
+      }
+    ]
+  }
+]
+
 Please read section [Inputs configuration](#inputs-configuration) for more details on how to configure the inputs.
 2. Execute `terraform init`
 3. Execute `terraform apply`
