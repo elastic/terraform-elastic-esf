@@ -10,12 +10,12 @@ This repository contains all necessary resources to deploy ESF.
 1. Define secrets and variables in `*.auto.tfvars` files. See `variables.tf` for the list of variables declared or read section [Inputs](#inputs). Example:
 ```terraform
 # variables.auto.tfvars
+
 lambda-name            = "my-esf-lambda"
-release-version        = "lambda-v1.9.0"
+release-version        = "lambda-v1.9.0" # See https://github.com/elastic/elastic-serverless-forwarder/tags
 # config-file-bucket     = "arn:aws:s3:::my-esf-bucket" # Uncomment if s3 bucket pre-exists
 aws_region             = "eu-central-1"
 # config-file-local-path = "./config.yaml" # Uncomment if local config path is used
-# See below for more details on how to configure inputs[]
 inputs = [
   {
     type = "cloudwatch-logs"
@@ -32,6 +32,7 @@ inputs = [
     ]
   }
 ]
+```
 
 Please read section [Inputs configuration](#inputs-configuration) for more details on how to configure the inputs.
 2. Execute `terraform init`
@@ -40,14 +41,17 @@ Please read section [Inputs configuration](#inputs-configuration) for more detai
 
 ## Inputs configuration
 
+> Note: Read [Create and upload config.yaml to S3 bucket](https://www.elastic.co/guide/en/esf/current/aws-deploy-elastic-serverless-forwarder.html#sample-s3-config-file) if you need more details on how the inputs should be configured.
+
+> Note: Read [Fields](https://www.elastic.co/guide/en/esf/current/aws-deploy-elastic-serverless-forwarder.html#s3-config-file-fields) to know which values are expected for each field input.
+
+> Warning: If you use `s3-sqs` input type, you also need to configure `s3-buckets` variable.
+
 When applying these configuration files, a `config.yaml` file will always be uploaded to an S3 bucket. This S3 bucket will be the one specified in `config-file-bucket`, or, if the value is left empty, a new S3 bucket will be created.
 
 Following this, we will create the content for the `config.yaml` file. This file will be built based on:
 - Variable `inputs`. This variable is not required.
 - Local configuration file found in `config-file-local-path`. This variable is also not required.
-
-> Note: Read [Create and upload config.yaml to S3 bucket](https://www.elastic.co/guide/en/esf/current/aws-deploy-elastic-serverless-forwarder.html#sample-s3-config-file) if you need more details on how the inputs should be configured.
-
 
 If both variables are provided, both will be considered. Otherwise, just the one that was given. If none are provided, the `config.yaml` file will be:
 
@@ -145,10 +149,6 @@ The `config.yaml` placed inside the bucket will be:
   "type": "cloudwatch-logs"
 ```
 
-
-
-
-
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
@@ -195,8 +195,8 @@ The `config.yaml` placed inside the bucket will be:
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_aws_region"></a> [aws\_region](#input\_aws\_region) | AWS Region | `string` | n/a | yes |
-| <a name="input_config-file-bucket"></a> [config-file-bucket](#input\_config-file-bucket) | The ARN of the S3 bucket to place the config.yaml file. If none given, new bucket will be created. | `string` | `""` | no |
-| <a name="input_config-file-local-path"></a> [config-file-local-path](#input\_config-file-local-path) | Local path to the configuration file. If none given, make sure to set inputs variable.<br>You can find instructions on how to set the configuration file in https://www.elastic.co/guide/en/esf/current/aws-deploy-elastic-serverless-forwarder.html#sample-s3-config-file. | `string` | `""` | no |
+| <a name="input_config-file-bucket"></a> [config-file-bucket](#input\_config-file-bucket) | The ARN of the S3 bucket to place the config.yaml file. It should exist. Otherwise, if the variable is left empty, a new bucket will be created. | `string` | `""` | no |
+| <a name="input_config-file-local-path"></a> [config-file-local-path](#input\_config-file-local-path) | Local path to the configuration file. Define this variable only if you want to specify the local configuration file. If none given, make sure to set inputs variable.<br>You can find instructions on how to set the configuration file in https://www.elastic.co/guide/en/esf/current/aws-deploy-elastic-serverless-forwarder.html#sample-s3-config-file. | `string` | `""` | no |
 | <a name="input_continuing-queue"></a> [continuing-queue](#input\_continuing-queue) | Custom BatchSize and MaximumBatchingWindowInSeconds for the ESF SQS Continuing queue | <pre>object({<br>    batch_size                = optional(number, 10)<br>    batching_window_in_second = optional(number, 0)<br>  })</pre> | <pre>{<br>  "batch_size": 10,<br>  "batching_window_in_second": 0<br>}</pre> | no |
 | <a name="input_inputs"></a> [inputs](#input\_inputs) | List of inputs to ESF. If none given, make sure to set config-file-local-path variable.<br>You can find instructions on the variables in https://www.elastic.co/guide/en/esf/current/aws-deploy-elastic-serverless-forwarder.html#s3-config-file-fields. | <pre>list(object({<br>    type = string<br>    id   = string<br>    outputs = list(object({<br>      type = string<br>      args = object({<br>        elasticsearch_url      = optional(string)<br>        logstash_url           = optional(string)<br>        cloud_id               = optional(string)<br>        api_key                = optional(string)<br>        username               = optional(string)<br>        password               = optional(string)<br>        es_datastream_name     = string<br>        batch_max_actions      = optional(number)<br>        batch_max_bytes        = optional(number)<br>        ssl_assert_fingerprint = optional(string)<br>        compression_level      = optional(string)<br>      })<br>    }))<br>  }))</pre> | `[]` | no |
 | <a name="input_kms-keys"></a> [kms-keys](#input\_kms-keys) | List of KMS Keys ARNs to be used for decrypting AWS SSM Secrets, Kinesis Data Streams, SQS queue, or S3 buckets | `list(string)` | `[]` | no |
@@ -209,6 +209,8 @@ The `config.yaml` placed inside the bucket will be:
 
 ## Outputs
 
-No outputs.
+| Name | Description |
+|------|-------------|
+| <a name="output_s3-arn"></a> [s3-arn](#output\_s3-arn) | n/a |
 
 <!-- END_TF_DOCS -->
