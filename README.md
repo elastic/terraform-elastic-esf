@@ -14,7 +14,7 @@ lambda-name            = "my-esf-lambda"
 release-version        = "lambda-v1.9.0"
 config-file-bucket     = "arn:aws:s3:::my-esf-bucket"
 aws_region             = "eu-central-1"
-config-file-local-path = "./config.yaml"
+# config-file-local-path = "./config.yaml" # Uncomment if local config path is used
 ```
 Please read section [Inputs configuration](#inputs-configuration) for more details on how to configure the inputs.
 2. Execute `terraform init`
