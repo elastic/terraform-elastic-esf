@@ -4,6 +4,11 @@ You can find details on ESF in [Elastic Serverless Forwarder for AWS](https://ww
 
 This repository contains all necessary resources to deploy ESF. 
 
+# Requirements
+
+- curl
+- terraform
+
 
 ## How to use
 
@@ -13,7 +18,7 @@ This repository contains all necessary resources to deploy ESF.
 
 lambda-name            = "my-esf-lambda"
 release-version        = "lambda-v1.9.0" # See https://github.com/elastic/elastic-serverless-forwarder/tags
-# config-file-bucket     = "arn:aws:s3:::my-esf-bucket" # Uncomment if s3 bucket pre-exists
+# config-file-bucket     = "my-esf-bucket" # Uncomment if s3 bucket pre-exists
 aws_region             = "eu-central-1"
 # config-file-local-path = "./config.yaml" # Uncomment if local config path is used
 inputs = [
@@ -155,7 +160,7 @@ The `config.yaml` placed inside the bucket will be:
 | Name | Version |
 |------|---------|
 | <a name="requirement_terraform"></a> [terraform](#requirement\_terraform) | >= 1.5.6 |
-| <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 5.14.0 |
+| <a name="requirement_aws"></a> [aws](#requirement\_aws) | ~> 5.32.0 |
 | <a name="requirement_external"></a> [external](#requirement\_external) | ~> 2.3.1 |
 | <a name="requirement_local"></a> [local](#requirement\_local) | ~> 2.4.0 |
 
@@ -163,7 +168,8 @@ The `config.yaml` placed inside the bucket will be:
 
 | Name | Version |
 |------|---------|
-| <a name="provider_aws"></a> [aws](#provider\_aws) | 5.14.0 |
+| <a name="provider_aws"></a> [aws](#provider\_aws) | 5.32.1 |
+| <a name="provider_terraform"></a> [terraform](#provider\_terraform) | n/a |
 
 ## Modules
 
@@ -183,19 +189,21 @@ The `config.yaml` placed inside the bucket will be:
 | [aws_lambda_permission.esf-cloudwatch-logs-invoke-function-permission](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/lambda_permission) | resource |
 | [aws_s3_bucket.esf-config-bucket](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_bucket) | resource |
 | [aws_s3_object.config-file](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_object) | resource |
+| [aws_s3_object.dependencies-file](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/s3_object) | resource |
 | [aws_sqs_queue.esf-continuing-queue](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sqs_queue) | resource |
 | [aws_sqs_queue.esf-continuing-queue-dlq](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sqs_queue) | resource |
 | [aws_sqs_queue.esf-replay-queue](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sqs_queue) | resource |
 | [aws_sqs_queue.esf-replay-queue-dlq](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sqs_queue) | resource |
 | [aws_sqs_queue_redrive_allow_policy.esf-continuing-queue-dlq-redrive-allow-policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sqs_queue_redrive_allow_policy) | resource |
 | [aws_sqs_queue_redrive_allow_policy.esf-replay-queue-dlq-redrive-allow-policy](https://registry.terraform.io/providers/hashicorp/aws/latest/docs/resources/sqs_queue_redrive_allow_policy) | resource |
+| [terraform_data.curl-dependencies-zip](https://registry.terraform.io/providers/hashicorp/terraform/latest/docs/resources/data) | resource |
 
 ## Inputs
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_aws_region"></a> [aws\_region](#input\_aws\_region) | AWS Region | `string` | n/a | yes |
-| <a name="input_config-file-bucket"></a> [config-file-bucket](#input\_config-file-bucket) | The ARN of the S3 bucket to place the config.yaml file. It should exist. Otherwise, if the variable is left empty, a new bucket will be created. | `string` | `""` | no |
+| <a name="input_config-file-bucket"></a> [config-file-bucket](#input\_config-file-bucket) | The name of the S3 bucket to place the config.yaml file and the dependencies zip.<br>If the variable is left empty, a new bucket will be created. Otherwise, the bucket needs to preexist. | `string` | `""` | no |
 | <a name="input_config-file-local-path"></a> [config-file-local-path](#input\_config-file-local-path) | Local path to the configuration file. Define this variable only if you want to specify the local configuration file. If none given, make sure to set inputs variable.<br>You can find instructions on how to set the configuration file in https://www.elastic.co/guide/en/esf/current/aws-deploy-elastic-serverless-forwarder.html#sample-s3-config-file. | `string` | `""` | no |
 | <a name="input_continuing-queue"></a> [continuing-queue](#input\_continuing-queue) | Custom BatchSize and MaximumBatchingWindowInSeconds for the ESF SQS Continuing queue | <pre>object({<br>    batch_size                = optional(number, 10)<br>    batching_window_in_second = optional(number, 0)<br>  })</pre> | <pre>{<br>  "batch_size": 10,<br>  "batching_window_in_second": 0<br>}</pre> | no |
 | <a name="input_inputs"></a> [inputs](#input\_inputs) | List of inputs to ESF. If none given, make sure to set config-file-local-path variable.<br>You can find instructions on the variables in https://www.elastic.co/guide/en/esf/current/aws-deploy-elastic-serverless-forwarder.html#s3-config-file-fields. | <pre>list(object({<br>    type = string<br>    id   = string<br>    outputs = list(object({<br>      type = string<br>      args = object({<br>        elasticsearch_url      = optional(string)<br>        logstash_url           = optional(string)<br>        cloud_id               = optional(string)<br>        api_key                = optional(string)<br>        username               = optional(string)<br>        password               = optional(string)<br>        es_datastream_name     = string<br>        batch_max_actions      = optional(number)<br>        batch_max_bytes        = optional(number)<br>        ssl_assert_fingerprint = optional(string)<br>        compression_level      = optional(string)<br>      })<br>    }))<br>  }))</pre> | `[]` | no |
@@ -211,6 +219,10 @@ The `config.yaml` placed inside the bucket will be:
 
 | Name | Description |
 |------|-------------|
-| <a name="output_s3-arn"></a> [s3-arn](#output\_s3-arn) | n/a |
+| <a name="output_config-bucket-name"></a> [config-bucket-name](#output\_config-bucket-name) | Name of the bucket with the config.yaml and zip dependencies file. |
+| <a name="output_esf-continuing-queue"></a> [esf-continuing-queue](#output\_esf-continuing-queue) | Name of the ESF continuing queue. |
+| <a name="output_esf-continuing-queue-dlq"></a> [esf-continuing-queue-dlq](#output\_esf-continuing-queue-dlq) | Name of the Dead Letter Queue for the ESF continuing queue. |
+| <a name="output_esf-replay-queue"></a> [esf-replay-queue](#output\_esf-replay-queue) | Name of the ESF replay queue. |
+| <a name="output_esf-replay-queue-dlq"></a> [esf-replay-queue-dlq](#output\_esf-replay-queue-dlq) | Name of the Dead Letter Queue for the ESF replay queue. |
 
 <!-- END_TF_DOCS -->

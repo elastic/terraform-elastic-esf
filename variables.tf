@@ -20,7 +20,10 @@ variable "log_level" {
 }
 
 variable "config-file-bucket" {
-  description = "The ARN of the S3 bucket to place the config.yaml file. It should exist. Otherwise, if the variable is left empty, a new bucket will be created."
+  description = <<EOT
+The name of the S3 bucket to place the config.yaml file and the dependencies zip.
+If the variable is left empty, a new bucket will be created. Otherwise, the bucket needs to preexist.
+EOT
   type        = string
   default     = ""
 }

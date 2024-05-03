@@ -1,11 +1,11 @@
 ###### Elastic Serverless Forwarder
 locals {
-  dependencies-bucket = "esf-dependencies-wu5oznr6fhmsquw933rjgo3rzgxqoeuc1a-s3alias"
-  dependencies-file   = "${var.release-version}.zip"
+  dependencies-bucket-url = "http://esf-dependencies.s3.amazonaws.com"
+  dependencies-file       = "${var.release-version}.zip"
 
   attach_network_policy = (var.vpc != null ? true : false)
 
-  config-file-bucket-name = var.config-file-bucket == "" ? (
+  config-bucket-name = var.config-file-bucket == "" ? (
     "${var.lambda-name}-config-bucket"
     ) : (
     split(":", var.config-file-bucket)[length(split(":", var.config-file-bucket)) - 1]
@@ -117,17 +117,32 @@ locals {
 resource "aws_s3_bucket" "esf-config-bucket" {
   count = var.config-file-bucket == "" ? 1 : 0
 
-  bucket        = local.config-file-bucket-name
+  bucket        = local.config-bucket-name
   force_destroy = true
 }
 
 resource "aws_s3_object" "config-file" {
-  bucket  = local.config-file-bucket-name
+  bucket  = local.config-bucket-name
   key     = "config.yaml"
   content = yamlencode(local.all-inputs)
 
   depends_on = [aws_s3_bucket.esf-config-bucket]
 }
+
+resource "terraform_data" "curl-dependencies-zip" {
+  provisioner "local-exec" {
+    command = "curl -L -O ${local.dependencies-bucket-url}/${local.dependencies-file}"
+  }
+}
+
+resource "aws_s3_object" "dependencies-file" {
+  bucket = local.config-bucket-name
+  key    = local.dependencies-file
+  source = local.dependencies-file
+
+  depends_on = [aws_s3_bucket.esf-config-bucket, terraform_data.curl-dependencies-zip]
+}
+
 
 module "esf-lambda-function" {
   source  = "terraform-aws-modules/lambda/aws"
@@ -140,12 +155,12 @@ module "esf-lambda-function" {
 
   create_package = false
   s3_existing_package = {
-    bucket = local.dependencies-bucket
+    bucket = local.config-bucket-name
     key    = local.dependencies-file
   }
 
   environment_variables = {
-    S3_CONFIG_FILE : "s3://${local.config-file-bucket-name}/config.yaml"
+    S3_CONFIG_FILE : "s3://${local.config-bucket-name}/config.yaml"
     SQS_CONTINUE_URL : aws_sqs_queue.esf-continuing-queue.url
     SQS_REPLAY_URL : aws_sqs_queue.esf-replay-queue.url
     LOG_LEVEL : var.log_level
@@ -164,9 +179,12 @@ module "esf-lambda-function" {
   policy_statements = merge(
     {
       config-file = {
-        effect    = "Allow",
-        actions   = ["s3:GetObject"],
-        resources = ["arn:aws:s3:::${local.config-file-bucket-name}/config.yaml"]
+        effect  = "Allow",
+        actions = ["s3:GetObject"],
+        resources = [
+          "arn:aws:s3:::${local.config-bucket-name}/config.yaml",
+          "arn:aws:s3:::${local.config-bucket-name}/${local.dependencies-file}"
+        ]
       },
       internal-queues = {
         effect    = "Allow",
@@ -185,7 +203,7 @@ module "esf-lambda-function" {
 
   use_existing_cloudwatch_log_group = false
 
-  depends_on = [aws_s3_object.config-file]
+  depends_on = [aws_s3_object.config-file, aws_s3_object.dependencies-file]
 }
 
 resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-kinesis-data-stream" {
