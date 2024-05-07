@@ -207,18 +207,16 @@ module "esf-lambda-function" {
 }
 
 resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-kinesis-data-stream" {
-  for_each = toset(local.kinesis-data-streams-arns)
-
-  event_source_arn = each.value
-  function_name    = module.esf-lambda-function.lambda_function_arn
-
-  enabled    = true
-  depends_on = [module.esf-lambda-function]
+  for_each          = toset(local.kinesis-data-streams-arns)
+  event_source_arn  = each.value
+  function_name     = module.esf-lambda-function.lambda_function_arn
+  starting_position = "TRIM_HORIZON"
+  enabled           = true
+  depends_on        = [module.esf-lambda-function]
 }
 
 resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-sqs" {
-  for_each = toset(local.sqs-arns)
-
+  for_each         = toset(local.sqs-arns)
   event_source_arn = each.value
   function_name    = module.esf-lambda-function.lambda_function_arn
   enabled          = true
