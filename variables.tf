@@ -8,11 +8,6 @@ variable "release-version" {
   type        = string
 }
 
-variable "config-file-bucket" {
-  description = "The ARN of the S3 bucket containing config.yaml file"
-  type        = string
-}
-
 variable "aws_region" {
   description = "AWS Region"
   type        = string
@@ -24,62 +19,95 @@ variable "log_level" {
   default     = "INFO"
 }
 
-variable "cloudwatch-logs" {
-  description = "List of Cloudwatch log group ARNs to add a Subscription Filters for to ESF"
-  type = list(object({
-    arn = string
-  }))
-  default = [{
-    arn = ""
-  }]
+variable "config-file-bucket" {
+  description = <<EOT
+The name of the S3 bucket to place the config.yaml file and the dependencies zip.
+If the variable is left empty, a new bucket will be created. Otherwise, the bucket needs to preexist.
+EOT
+  type        = string
+  default     = ""
 }
 
-variable "kinesis-data-stream" {
-  description = "List of Kinesis Data Stream to add an Event Source for to ESF"
-  type = list(object({
-    arn                         = string
-    batch_size                  = optional(number, 10)
-    starting_position           = optional(string, "TRIM_HORIZON")
-    starting_position_timestamp = optional(number)
-    batching_window_in_second   = optional(number, 0)
-    parallelization_factor      = optional(number, 1)
-  }))
-  default = [{
-    arn                         = ""
-    batch_size                  = 10
-    starting_position           = "TRIM_HORIZON"
-    starting_position_timestamp = null
-    batching_window_in_second   = 0
-    parallelization_factor      = 1
-  }]
+variable "config-file-local-path" {
+  description = <<EOT
+Local path to the configuration file. Define this variable only if you want to specify the local configuration file. If none given, make sure to set inputs variable.
+You can find instructions on how to set the configuration file in https://www.elastic.co/guide/en/esf/current/aws-deploy-elastic-serverless-forwarder.html#sample-s3-config-file.
+EOT
+  type        = string
+  default     = ""
 }
 
-variable "sqs" {
-  description = "List of Direct SQS queues to add an Event Source for to ESF"
+variable "inputs" {
+  description = <<EOT
+List of inputs to ESF. If none given, make sure to set config-file-local-path variable.
+You can find instructions on the variables in https://www.elastic.co/guide/en/esf/current/aws-deploy-elastic-serverless-forwarder.html#s3-config-file-fields.
+EOT
   type = list(object({
-    arn                       = string
-    batch_size                = optional(number, 10)
-    batching_window_in_second = optional(number, 0)
+    type = string
+    id   = string
+    outputs = list(object({
+      type = string
+      args = object({
+        elasticsearch_url      = optional(string)
+        logstash_url           = optional(string)
+        cloud_id               = optional(string)
+        api_key                = optional(string)
+        username               = optional(string)
+        password               = optional(string)
+        es_datastream_name     = string
+        batch_max_actions      = optional(number)
+        batch_max_bytes        = optional(number)
+        ssl_assert_fingerprint = optional(string)
+        compression_level      = optional(string)
+      })
+    }))
   }))
-  default = [{
-    arn                       = ""
-    batch_size                = 10
-    batching_window_in_second = 0
-  }]
-}
+  default = []
 
-variable "s3-sqs" {
-  description = "List of S3 SQS Event Notifications queues to add an Event Source for to ESF"
-  type = list(object({
-    arn                       = string
-    batch_size                = optional(number, 10)
-    batching_window_in_second = optional(number, 0)
-  }))
-  default = [{
-    arn                       = ""
-    batch_size                = 10
-    batching_window_in_second = 0
-  }]
+  validation {
+    condition = alltrue([
+      for input in var.inputs :
+      contains(["cloudwatch-logs", "kinesis-data-stream", "sqs", "s3-sqs"], input.type)
+    ])
+    error_message = "The type of trigger input needs to be one of: cloudwatch-logs, kinesis-data-stream, sqs or s3-sqs."
+  }
+
+  validation {
+    condition = alltrue([
+      for input in var.inputs : alltrue([
+        for output in input.outputs : alltrue([
+          contains(["elasticsearch", "logstash"], output.type)
+        ])
+      ])
+    ])
+    error_message = "The type of output can only be elasticsearch or logstash."
+  }
+
+  validation {
+    condition = alltrue([
+      for input in var.inputs : alltrue([
+        for output in input.outputs : alltrue([
+          output.type == "elasticsearch" ?
+          (output.args.elasticsearch_url == null && output.args.cloud_id == null ? false : true) :
+          (output.args.logstash_url == null ? false : true)
+        ])
+      ])
+    ])
+    error_message = "All elasticsearch outputs must contain elasticsearch_url or cloud_id. All logstash outputs must contain logstash_url."
+  }
+
+  validation {
+    condition = alltrue([
+      for input in var.inputs : alltrue([
+        for output in input.outputs : alltrue([
+          output.type == "elasticsearch" ?
+          ((output.args.username == null || output.args.password == null) && output.args.api_key == null ? false : true) :
+          (output.args.username == null || output.args.password == null ? false : true)
+        ])
+      ])
+    ])
+    error_message = "All elasticsearch outputs must contain api key or username and password. All logstash outputs must contain username and password."
+  }
 }
 
 variable "kms-keys" {

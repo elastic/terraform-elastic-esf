@@ -2,7 +2,7 @@
 .*
 
 # Ignore tfstate files
-*.tfstate
+*.tfstate*
 
 # Ignore auto.tfvars files
 *.auto.tfvars

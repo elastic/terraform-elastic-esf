@@ -1,13 +1,60 @@
 ###### Elastic Serverless Forwarder
 locals {
-  dependencies-bucket = "esf-dependencies-wu5oznr6fhmsquw933rjgo3rzgxqoeuc1a-s3alias"
-  dependencies-file   = "${var.release-version}.zip"
+  dependencies-bucket-url = "http://esf-dependencies.s3.amazonaws.com"
+  dependencies-file       = "${var.release-version}.zip"
 
   attach_network_policy = (var.vpc != null ? true : false)
 
-  s3-url-config-file = "s3://${split(":", var.config-file-bucket)[length(split(":", var.config-file-bucket)) - 1]}"
+  config-bucket-name = var.config-file-bucket == "" ? (
+    "${var.lambda-name}-config-bucket"
+    ) : (
+    split(":", var.config-file-bucket)[length(split(":", var.config-file-bucket)) - 1]
+  )
+  content-config-file = var.config-file-local-path == "" ? {} : yamldecode(file("${var.config-file-local-path}"))
 
-  kinesis-data-stream = (length([for kinesis-data-stream in var.kinesis-data-stream : kinesis-data-stream.arn if length(kinesis-data-stream.arn) > 0]) > 0 ? {
+  # There are null entries in the inputs if not all fields were filled.
+  # This will later cause errors in the code if the entries are not expected.
+  # We need to make sure we will not pass these fields to the file when we make them part of the YAML content.
+  inputs-without-nulls = [
+    for input in var.inputs :
+    {
+      id : input.id,
+      type : input.type,
+      outputs : [
+        for output in input.outputs : {
+          type : output.type
+          args : {
+            for key, arg in output.args :
+            key => arg if arg != null
+          }
+        }
+      ]
+    }
+  ]
+
+  # Join all inputs together: the ones coming from the variables, and the ones coming from the local config.yaml file.
+  all-inputs = {
+    inputs : concat(
+      local.inputs-without-nulls,
+      local.content-config-file == {} ? [] : local.content-config-file["inputs"]
+    )
+  }
+
+  cloudwatch-logs-arns = compact(flatten([
+    [for input in local.all-inputs.inputs : (
+      input["type"] == "cloudwatch-logs" ? input["id"] : ""
+      )
+    ]
+  ]))
+
+  kinesis-data-streams-arns = compact(flatten([
+    [for input in local.all-inputs.inputs : (
+      input["type"] == "kinesis-data-stream" ? input["id"] : ""
+      )
+    ]
+  ]))
+
+  kinesis-data-stream = (length(local.kinesis-data-streams-arns) > 0 ? {
     kinesis-data-stream = { effect = "Allow", actions = [
       "kinesis:DescribeStream",
       "kinesis:DescribeStreamSummary",
@@ -16,23 +63,37 @@ locals {
       "kinesis:ListShards",
       "kinesis:ListStreams",
       "kinesis:SubscribeToShard"
-    ], resources = [for kinesis-data-stream in var.kinesis-data-stream : kinesis-data-stream.arn] }
+    ], resources = local.kinesis-data-streams-arns }
   } : {})
 
-  sqs = (length([for sqs in var.sqs : sqs.arn if length(sqs.arn) > 0]) > 0 ? {
+  sqs-arns = compact(flatten([
+    [for input in local.all-inputs.inputs : (
+      input["type"] == "sqs" ? input["id"] : ""
+      )
+    ]
+  ]))
+
+  sqs = (length(local.sqs-arns) > 0 ? {
     sqs = { effect = "Allow", actions = [
       "sqs:ReceiveMessage",
       "sqs:DeleteMessage",
       "sqs:GetQueueAttributes"
-    ], resources = [for sqs in var.sqs : sqs.arn] }
+    ], resources = local.sqs-arns }
   } : {})
 
-  s3-sqs = (length([for s3-sqs in var.s3-sqs : s3-sqs.arn if length(s3-sqs.arn) > 0]) > 0 ? {
+  s3-sqs-arns = compact(flatten([
+    [for input in local.all-inputs.inputs : (
+      input["type"] == "s3-sqs" ? input["id"] : ""
+      )
+    ]
+  ]))
+
+  s3-sqs = (length(local.s3-sqs-arns) > 0 ? {
     s3-sqs = { effect = "Allow", actions = [
       "sqs:ReceiveMessage",
       "sqs:DeleteMessage",
       "sqs:GetQueueAttributes"
-    ], resources = [for s3-sqs in var.s3-sqs : s3-sqs.arn] }
+    ], resources = local.s3-sqs-arns }
   } : {})
 
   ssm-secrets = (length(var.ssm-secrets) > 0 ? {
@@ -48,11 +109,40 @@ locals {
     s3-buckets-get_object  = { effect = "Allow", actions = ["s3:GetObject"], resources = [for arn in var.s3-buckets : "${arn}/*"] }
   } : {})
 
-  ec2 = (length(var.cloudwatch-logs) > 0 ? {
+  ec2 = (length(local.cloudwatch-logs-arns) > 0 ? {
     ec2 = { effect = "Allow", actions = ["ec2:DescribeRegions"], resources = ["*"] } } : {}
   )
-
 }
+
+resource "aws_s3_bucket" "esf-config-bucket" {
+  count = var.config-file-bucket == "" ? 1 : 0
+
+  bucket        = local.config-bucket-name
+  force_destroy = true
+}
+
+resource "aws_s3_object" "config-file" {
+  bucket  = local.config-bucket-name
+  key     = "config.yaml"
+  content = yamlencode(local.all-inputs)
+
+  depends_on = [aws_s3_bucket.esf-config-bucket]
+}
+
+resource "terraform_data" "curl-dependencies-zip" {
+  provisioner "local-exec" {
+    command = "curl -L -O ${local.dependencies-bucket-url}/${local.dependencies-file}"
+  }
+}
+
+resource "aws_s3_object" "dependencies-file" {
+  bucket = local.config-bucket-name
+  key    = local.dependencies-file
+  source = local.dependencies-file
+
+  depends_on = [aws_s3_bucket.esf-config-bucket, terraform_data.curl-dependencies-zip]
+}
+
 
 module "esf-lambda-function" {
   source  = "terraform-aws-modules/lambda/aws"
@@ -65,12 +155,12 @@ module "esf-lambda-function" {
 
   create_package = false
   s3_existing_package = {
-    bucket = local.dependencies-bucket
+    bucket = local.config-bucket-name
     key    = local.dependencies-file
   }
 
   environment_variables = {
-    S3_CONFIG_FILE : "${local.s3-url-config-file}/config.yaml"
+    S3_CONFIG_FILE : "s3://${local.config-bucket-name}/config.yaml"
     SQS_CONTINUE_URL : aws_sqs_queue.esf-continuing-queue.url
     SQS_REPLAY_URL : aws_sqs_queue.esf-replay-queue.url
     LOG_LEVEL : var.log_level
@@ -89,9 +179,12 @@ module "esf-lambda-function" {
   policy_statements = merge(
     {
       config-file = {
-        effect    = "Allow",
-        actions   = ["s3:GetObject"],
-        resources = ["${var.config-file-bucket}/config.yaml"]
+        effect  = "Allow",
+        actions = ["s3:GetObject"],
+        resources = [
+          "arn:aws:s3:::${local.config-bucket-name}/config.yaml",
+          "arn:aws:s3:::${local.config-bucket-name}/${local.dependencies-file}"
+        ]
       },
       internal-queues = {
         effect    = "Allow",
@@ -109,55 +202,49 @@ module "esf-lambda-function" {
   )
 
   use_existing_cloudwatch_log_group = false
+
+  depends_on = [aws_s3_object.config-file, aws_s3_object.dependencies-file]
 }
 
 resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-kinesis-data-stream" {
-  for_each                           = { for kinesis-data-stream in var.kinesis-data-stream : kinesis-data-stream.arn => kinesis-data-stream if length(kinesis-data-stream.arn) > 0 }
-  event_source_arn                   = each.value.arn
-  function_name                      = module.esf-lambda-function.lambda_function_arn
-  batch_size                         = each.value.batch_size
-  maximum_batching_window_in_seconds = each.value.batching_window_in_second
-  parallelization_factor             = each.value.parallelization_factor
-  starting_position                  = each.value.starting_position
-  starting_position_timestamp        = each.value.starting_position_timestamp
-  enabled                            = true
-  depends_on                         = [module.esf-lambda-function]
+  for_each          = toset(local.kinesis-data-streams-arns)
+  event_source_arn  = each.value
+  function_name     = module.esf-lambda-function.lambda_function_arn
+  starting_position = "TRIM_HORIZON"
+  enabled           = true
+  depends_on        = [module.esf-lambda-function]
 }
 
 resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-sqs" {
-  for_each                           = { for sqs in var.sqs : sqs.arn => sqs if length(sqs.arn) > 0 }
-  event_source_arn                   = each.value.arn
-  function_name                      = module.esf-lambda-function.lambda_function_arn
-  batch_size                         = each.value.batch_size
-  maximum_batching_window_in_seconds = each.value.batching_window_in_second
-  enabled                            = true
-  depends_on                         = [module.esf-lambda-function]
+  for_each         = toset(local.sqs-arns)
+  event_source_arn = each.value
+  function_name    = module.esf-lambda-function.lambda_function_arn
+  enabled          = true
+  depends_on       = [module.esf-lambda-function]
 }
 
 resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-s3-sqs" {
-  for_each                           = { for s3-sqs in var.s3-sqs : s3-sqs.arn => s3-sqs if length(s3-sqs.arn) > 0 }
-  event_source_arn                   = each.value.arn
-  function_name                      = module.esf-lambda-function.lambda_function_arn
-  batch_size                         = each.value.batch_size
-  maximum_batching_window_in_seconds = each.value.batching_window_in_second
-  enabled                            = true
-  depends_on                         = [module.esf-lambda-function]
+  for_each         = toset(local.s3-sqs-arns)
+  event_source_arn = each.value
+  function_name    = module.esf-lambda-function.lambda_function_arn
+  enabled          = true
+  depends_on       = [module.esf-lambda-function]
 }
 
 resource "aws_lambda_permission" "esf-cloudwatch-logs-invoke-function-permission" {
-  for_each      = { for cloudwatch-logs in var.cloudwatch-logs : cloudwatch-logs.arn => cloudwatch-logs if length(cloudwatch-logs.arn) > 0 }
+  for_each      = toset(local.cloudwatch-logs-arns)
   action        = "lambda:InvokeFunction"
   function_name = module.esf-lambda-function.lambda_function_name
-  principal     = "logs.${split(":", each.value.arn)[3]}.amazonaws.com"
-  source_arn    = each.value.arn
+  principal     = "logs.${split(":", each.value)[3]}.amazonaws.com"
+  source_arn    = each.value
 }
 
 resource "aws_cloudwatch_log_subscription_filter" "esf-cloudwatch-log-subscription-filter" {
-  for_each        = { for cloudwatch-logs in var.cloudwatch-logs : cloudwatch-logs.arn => cloudwatch-logs if length(cloudwatch-logs.arn) > 0 }
-  name            = split(":", each.value.arn)[6]
+  for_each        = toset(local.cloudwatch-logs-arns)
+  name            = split(":", each.value)[6]
   destination_arn = module.esf-lambda-function.lambda_function_arn
   filter_pattern  = ""
-  log_group_name  = split(":", each.value.arn)[6]
+  log_group_name  = split(":", each.value)[6]
   depends_on      = [aws_lambda_permission.esf-cloudwatch-logs-invoke-function-permission]
 }
 
