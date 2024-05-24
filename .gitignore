@@ -1,5 +1,6 @@
-# Ignore all hidden directories and files
+# Ignore all hidden directories and files, except for .github
 .*
+!.github
 
 # Ignore tfstate files
 *.tfstate*

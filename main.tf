@@ -1,3 +1,4 @@
+
 terraform {
   required_version = ">= 1.5.6"
   required_providers {
@@ -18,6 +19,9 @@ terraform {
 
 provider "aws" {
   region = var.aws_region
+
+  access_key = "AKIAZEDJODE3LZSQ3WIU"
+  secret_key = "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"
 }
 
 
