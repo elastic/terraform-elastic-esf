@@ -4,8 +4,8 @@ name: check-headers
 
 on:
   pull_request:
-    paths:
-      - '*'
+    branches:
+      - main
 
 jobs:
 
