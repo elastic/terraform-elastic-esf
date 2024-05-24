@@ -5,7 +5,7 @@ name: check-headers
 on:
   pull_request:
     branches:
-      - main
+      - "main"
 
 jobs:
 
