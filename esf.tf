@@ -212,7 +212,9 @@ resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-kinesis-dat
   function_name     = module.esf-lambda-function.lambda_function_arn
   starting_position = "TRIM_HORIZON"
   enabled           = true
-  depends_on        = [module.esf-lambda-function]
+
+  # It needs to depend on the update on config.yaml file, to avoid triggering the lambda before it
+  depends_on        = [module.esf-lambda-function, aws_s3_object.config-file]
 }
 
 resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-sqs" {
@@ -220,7 +222,9 @@ resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-sqs" {
   event_source_arn = each.value
   function_name    = module.esf-lambda-function.lambda_function_arn
   enabled          = true
-  depends_on       = [module.esf-lambda-function]
+
+  # It needs to depend on the update on config.yaml file, to avoid triggering the lambda before it
+  depends_on        = [module.esf-lambda-function, aws_s3_object.config-file]
 }
 
 resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-s3-sqs" {
@@ -228,7 +232,9 @@ resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-s3-sqs" {
   event_source_arn = each.value
   function_name    = module.esf-lambda-function.lambda_function_arn
   enabled          = true
-  depends_on       = [module.esf-lambda-function]
+
+  # It needs to depend on the update on config.yaml file, to avoid triggering the lambda before it
+  depends_on        = [module.esf-lambda-function, aws_s3_object.config-file]
 }
 
 resource "aws_lambda_permission" "esf-cloudwatch-logs-invoke-function-permission" {
@@ -237,6 +243,9 @@ resource "aws_lambda_permission" "esf-cloudwatch-logs-invoke-function-permission
   function_name = module.esf-lambda-function.lambda_function_name
   principal     = "logs.${split(":", each.value)[3]}.amazonaws.com"
   source_arn    = each.value
+
+  # It needs to depend on the update on config.yaml file, to avoid triggering the lambda before it
+  depends_on        = [aws_s3_object.config-file]
 }
 
 resource "aws_cloudwatch_log_subscription_filter" "esf-cloudwatch-log-subscription-filter" {
