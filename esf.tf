@@ -213,8 +213,7 @@ resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-kinesis-dat
   starting_position = "TRIM_HORIZON"
   enabled           = true
 
-  # It needs to depend on the update on config.yaml file, to avoid triggering the lambda before it
-  depends_on        = [module.esf-lambda-function, aws_s3_object.config-file]
+  depends_on        = [module.esf-lambda-function]
 }
 
 resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-sqs" {
@@ -223,8 +222,7 @@ resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-sqs" {
   function_name    = module.esf-lambda-function.lambda_function_arn
   enabled          = true
 
-  # It needs to depend on the update on config.yaml file, to avoid triggering the lambda before it
-  depends_on        = [module.esf-lambda-function, aws_s3_object.config-file]
+  depends_on        = [module.esf-lambda-function]
 }
 
 resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-s3-sqs" {
@@ -233,8 +231,7 @@ resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-s3-sqs" {
   function_name    = module.esf-lambda-function.lambda_function_arn
   enabled          = true
 
-  # It needs to depend on the update on config.yaml file, to avoid triggering the lambda before it
-  depends_on        = [module.esf-lambda-function, aws_s3_object.config-file]
+  depends_on        = [module.esf-lambda-function]
 }
 
 resource "aws_lambda_permission" "esf-cloudwatch-logs-invoke-function-permission" {
