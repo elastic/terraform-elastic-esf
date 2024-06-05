@@ -1,0 +1,60 @@
+---
+## Check file headers
+name: check-headers
+
+on:
+  pull_request:
+    branches:
+      - "main"
+
+jobs:
+
+  check-headers:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - name: Check if all terraform files have the expected header
+        shell: bash
+        run: |
+          #Create temporary file with the header
+          TEMP_FILE_HEADER=$(mktemp)
+          cat > "$TEMP_FILE_HEADER" <<EOF
+          /*
+           * Copyright Elasticsearch B.V. and/or licensed to Elasticsearch B.V. under one
+           * or more contributor license agreements. Licensed under the Elastic License
+           * 2.0; you may not use this file except in compliance with the Elastic License
+           * 2.0.
+           */
+          EOF
+          
+          FAIL=false
+          # Get all files, except txt, md and files inside hidden directories
+          FILES=$(find . -not -name "*.txt" -not -name "*.md" -not -path "./.*" -type f)
+          for FILE in $FILES
+          do
+            CONTENT=$(awk 'NR==1,NR==6' "$FILE")
+            TEMP_FILE=$(mktemp)
+            echo "$CONTENT" > "$TEMP_FILE"
+          
+            chmod 755 "$TEMP_FILE"
+          
+            if ! $( cmp -s "$TEMP_FILE" "$TEMP_FILE_HEADER" ); then
+              echo "::error::$FILE is missing header."
+              echo "First six lines should be:"
+              cat "$TEMP_FILE_HEADER"
+              FAIL=true
+            else
+              echo "$FILE has expected header."
+            fi
+            
+            rm "$TEMP_FILE"
+          done
+          
+          # Running this in the end, so all files missing the header have a printing line
+          if $FAIL; then
+            exit 1
+          fi

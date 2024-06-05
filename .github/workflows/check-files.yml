@@ -1,0 +1,35 @@
+---
+## Check if needed files exist (".github/CODEOWNERS" "LICENSE.txt" "README.md")
+name: check-files
+
+on:
+  pull_request:
+    branches:
+      - "main"
+
+jobs:
+
+  check-files:
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+
+    steps:
+
+      - uses: actions/checkout@v4
+
+      - name: Check if default files exist
+        shell: bash
+        run: |
+          FAIL=false
+          for FILE in ".github/CODEOWNERS" "LICENSE.txt" "README.md"
+          do
+            if ! $( test -f "$FILE" ); then
+              echo "::error::File $FILE does not exist."
+              FAIL=true
+            fi
+          done
+          
+          # Running this in the end, so all missing files have a line printing they are missing
+          if $FAIL; then
+            exit 1
+          fi
