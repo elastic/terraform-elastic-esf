@@ -219,7 +219,9 @@ resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-kinesis-dat
   function_name     = module.esf-lambda-function.lambda_function_arn
   starting_position = "TRIM_HORIZON"
   enabled           = true
-  depends_on        = [module.esf-lambda-function]
+
+  # We should wait for the update of the config.yaml
+  depends_on = [module.esf-lambda-function, aws_s3_object.config-file]
 }
 
 resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-sqs" {
@@ -227,7 +229,9 @@ resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-sqs" {
   event_source_arn = each.value
   function_name    = module.esf-lambda-function.lambda_function_arn
   enabled          = true
-  depends_on       = [module.esf-lambda-function]
+
+  # We should wait for the update of the config.yaml
+  depends_on = [module.esf-lambda-function, aws_s3_object.config-file]
 }
 
 resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-s3-sqs" {
@@ -235,7 +239,9 @@ resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-s3-sqs" {
   event_source_arn = each.value
   function_name    = module.esf-lambda-function.lambda_function_arn
   enabled          = true
-  depends_on       = [module.esf-lambda-function]
+
+  # We should wait for the update of the config.yaml
+  depends_on = [module.esf-lambda-function, aws_s3_object.config-file]
 }
 
 resource "aws_lambda_permission" "esf-cloudwatch-logs-invoke-function-permission" {
@@ -252,7 +258,9 @@ resource "aws_cloudwatch_log_subscription_filter" "esf-cloudwatch-log-subscripti
   destination_arn = module.esf-lambda-function.lambda_function_arn
   filter_pattern  = ""
   log_group_name  = split(":", each.value)[6]
-  depends_on      = [aws_lambda_permission.esf-cloudwatch-logs-invoke-function-permission]
+
+  # We should wait for the update of the config.yaml
+  depends_on = [aws_lambda_permission.esf-cloudwatch-logs-invoke-function-permission, aws_s3_object.config-file]
 }
 
 resource "aws_lambda_event_source_mapping" "esf-event-source-mapping-continuing-queue" {
