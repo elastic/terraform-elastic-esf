@@ -159,6 +159,7 @@ module "esf-lambda-function" {
   handler       = "main_aws.lambda_handler"
   runtime       = "python3.9"
   architectures = ["x86_64"]
+  timeout = 900
 
   create_package = false
   s3_existing_package = {
