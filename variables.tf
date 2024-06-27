@@ -158,3 +158,9 @@ variable "continuing-queue" {
     batching_window_in_second = 0
   }
 }
+
+variable "lambda-timeout" {
+  description = "The amount of time your Lambda Function has to run in seconds."
+  type        = number
+  default     = 900
+}
