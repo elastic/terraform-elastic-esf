@@ -209,6 +209,7 @@ The `config.yaml` placed inside the bucket will be:
 | <a name="input_inputs"></a> [inputs](#input\_inputs) | List of inputs to ESF. If none given, make sure to set config-file-local-path variable.<br>You can find instructions on the variables in https://www.elastic.co/guide/en/esf/current/aws-deploy-elastic-serverless-forwarder.html#s3-config-file-fields. | <pre>list(object({<br>    type = string<br>    id   = string<br>    outputs = list(object({<br>      type = string<br>      args = object({<br>        elasticsearch_url      = optional(string)<br>        logstash_url           = optional(string)<br>        cloud_id               = optional(string)<br>        api_key                = optional(string)<br>        username               = optional(string)<br>        password               = optional(string)<br>        es_datastream_name     = string<br>        batch_max_actions      = optional(number)<br>        batch_max_bytes        = optional(number)<br>        ssl_assert_fingerprint = optional(string)<br>        compression_level      = optional(string)<br>      })<br>    }))<br>  }))</pre> | `[]` | no |
 | <a name="input_kms-keys"></a> [kms-keys](#input\_kms-keys) | List of KMS Keys ARNs to be used for decrypting AWS SSM Secrets, Kinesis Data Streams, SQS queue, or S3 buckets | `list(string)` | `[]` | no |
 | <a name="input_lambda-name"></a> [lambda-name](#input\_lambda-name) | ESF Lambda function name | `string` | n/a | yes |
+| <a name="input_lambda-timeout"></a> [lambda-timeout](#input\_lambda-timeout) | The amount of time your Lambda Function has to run in seconds. | `number` | `3` | no |
 | <a name="input_log_level"></a> [log\_level](#input\_log\_level) | Log level for ESF | `string` | `"INFO"` | no |
 | <a name="input_release-version"></a> [release-version](#input\_release-version) | ESF release version. You can find the possible values in https://github.com/elastic/elastic-serverless-forwarder/tags. | `string` | n/a | yes |
 | <a name="input_s3-buckets"></a> [s3-buckets](#input\_s3-buckets) | List of S3 bucket ARNs that are sources for the S3 SQS Event Notifications | `list(string)` | `[]` | no |
@@ -224,5 +225,6 @@ The `config.yaml` placed inside the bucket will be:
 | <a name="output_esf-continuing-queue-dlq"></a> [esf-continuing-queue-dlq](#output\_esf-continuing-queue-dlq) | Name of the Dead Letter Queue for the ESF continuing queue. |
 | <a name="output_esf-replay-queue"></a> [esf-replay-queue](#output\_esf-replay-queue) | Name of the ESF replay queue. |
 | <a name="output_esf-replay-queue-dlq"></a> [esf-replay-queue-dlq](#output\_esf-replay-queue-dlq) | Name of the Dead Letter Queue for the ESF replay queue. |
+
 
 <!-- END_TF_DOCS -->
