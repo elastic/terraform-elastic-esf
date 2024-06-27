@@ -162,5 +162,5 @@ variable "continuing-queue" {
 variable "lambda-timeout" {
   description = "The amount of time your Lambda Function has to run in seconds."
   type        = number
-  default     = 3
+  default     = 900
 }
