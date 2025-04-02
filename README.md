@@ -17,7 +17,7 @@ This repository contains all necessary resources to deploy ESF.
 # variables.auto.tfvars
 
 lambda-name            = "my-esf-lambda"
-release-version        = "lambda-v1.9.0" # See https://github.com/elastic/elastic-serverless-forwarder/tags
+release-version        = "lambda-v1.19.0" # See https://github.com/elastic/elastic-serverless-forwarder/tags
 # config-file-bucket     = "my-esf-bucket" # Uncomment if s3 bucket pre-exists
 aws_region             = "eu-central-1"
 # config-file-local-path = "./config.yaml" # Uncomment if local config path is used
