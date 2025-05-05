@@ -124,6 +124,20 @@ locals {
     minor = tonumber(local.release-version-unpacked[1])
     patch = tonumber(local.release-version-unpacked[2])
   }
+
+  # Select Lambda runtime based on release-version
+  #
+  # - If the major version is less than 1, use python3.9.
+  # - If the major version is 1 and the minor version is less than 20, use python3.9.
+  # - Otherwise, use python3.12.
+  #
+  lambda_runtime = (
+    local.release-version-parts.major < 1 ||
+    (
+      local.release-version-parts.major == 1 &&
+      local.release-version-parts.minor < 20
+    )
+  ) ? "python3.9" : "python3.12"
 }
 
 check "esf-release" {
@@ -176,7 +190,7 @@ module "esf-lambda-function" {
 
   function_name = var.lambda-name
   handler       = "main_aws.lambda_handler"
-  runtime       = "python3.9"
+  runtime       = local.lambda_runtime
   architectures = ["x86_64"]
   timeout       = var.lambda-timeout
 
