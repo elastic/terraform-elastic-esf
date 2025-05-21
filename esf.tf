@@ -129,8 +129,9 @@ locals {
 check "esf-release" {
   assert {
     condition = (
-      (local.release-version-parts.major >= 1 && local.release-version-parts.minor > 7) ||
-      (local.release-version-parts.major >= 1 && local.release-version-parts.minor == 7 && local.release-version-parts.patch >= 2)
+      (local.release-version-parts.major > 1) ||
+      (local.release-version-parts.major == 1 && local.release-version-parts.minor > 7) ||
+      (local.release-version-parts.major == 1 && local.release-version-parts.minor == 7 && local.release-version-parts.patch >= 2)
     )
     # Why version 1.7.2? Because before that version, ESF was listing the regions and required the `ec2:DescribeRegions` permission.
     # See https://github.com/elastic/elastic-serverless-forwarder/pull/811
