@@ -13,6 +13,11 @@ variable "lambda-name" {
 variable "release-version" {
   description = "ESF release version. You can find the possible values in https://github.com/elastic/elastic-serverless-forwarder/tags."
   type        = string
+
+  validation {
+    condition     = can(regex("^lambda-v[0-9]+\\.[0-9]+\\.[0-9]+$", var.release-version))
+    error_message = "The release-version must match the format lambda-v<major>.<minor>.<patch>. For example, lambda-v1.20.0."
+  }
 }
 
 variable "aws_region" {
