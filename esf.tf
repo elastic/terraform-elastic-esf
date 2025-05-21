@@ -115,7 +115,29 @@ locals {
     s3-buckets-list_bucket = { effect = "Allow", actions = ["s3:ListBucket"], resources = var.s3-buckets },
     s3-buckets-get_object  = { effect = "Allow", actions = ["s3:GetObject"], resources = [for arn in var.s3-buckets : "${arn}/*"] }
   } : {})
+
+  # Unpack release-version (e.g., `lambda-v1.20.0`) into major, minor, patch
+  release-version-unpacked = split(".", replace(var.release-version, "lambda-v", ""))
+
+  release-version-parts = {
+    major = tonumber(local.release-version-unpacked[0])
+    minor = tonumber(local.release-version-unpacked[1])
+    patch = tonumber(local.release-version-unpacked[2])
+  }
 }
+
+check "esf-release" {
+  assert {
+    condition = (
+      local.release-version-parts.major > 1 ||
+      (
+        local.release-version-parts.major == 1 && local.release-version-parts.minor >= 7 && local.release-version-parts.patch >= 2
+      )
+    )
+    error_message = "Release version ${var.release-version} is not supported. Please use a version >= 1.7.2"
+  }
+}
+
 
 resource "aws_s3_bucket" "esf-config-bucket" {
   count = var.config-file-bucket == "" ? 1 : 0
