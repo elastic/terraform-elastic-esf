@@ -115,10 +115,6 @@ locals {
     s3-buckets-list_bucket = { effect = "Allow", actions = ["s3:ListBucket"], resources = var.s3-buckets },
     s3-buckets-get_object  = { effect = "Allow", actions = ["s3:GetObject"], resources = [for arn in var.s3-buckets : "${arn}/*"] }
   } : {})
-
-  ec2 = (length(local.cloudwatch-logs-arns) > 0 ? {
-    ec2 = { effect = "Allow", actions = ["ec2:DescribeRegions"], resources = ["*"] } } : {}
-  )
 }
 
 resource "aws_s3_bucket" "esf-config-bucket" {
@@ -205,8 +201,7 @@ module "esf-lambda-function" {
     local.sqs,
     local.ssm-secrets,
     local.kms-keys,
-    local.s3-buckets,
-    local.ec2
+    local.s3-buckets
   )
 
   use_existing_cloudwatch_log_group = false
