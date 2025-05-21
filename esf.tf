@@ -134,6 +134,8 @@ check "esf-release" {
         local.release-version-parts.major == 1 && local.release-version-parts.minor >= 7 && local.release-version-parts.patch >= 2
       )
     )
+    # Why version 1.7.2? Because before that version, ESF was listing the regions and required the `ec2:DescribeRegions` permission.
+    # See https://github.com/elastic/elastic-serverless-forwarder/pull/811
     error_message = "Release version ${var.release-version} is not supported. Please use a version >= 1.7.2"
   }
 }
