@@ -25,6 +25,11 @@ variable "aws_region" {
   type        = string
 }
 
+variable "aws_profile" {
+  description = "AWS Profile"
+  type        = optional(string)
+}
+
 variable "log_level" {
   description = "Log level for ESF"
   type        = string
