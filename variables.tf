@@ -27,7 +27,8 @@ variable "aws_region" {
 
 variable "aws_profile" {
   description = "AWS Profile"
-  type        = optional(string)
+  type        = string
+  default     = null
 }
 
 variable "log_level" {
