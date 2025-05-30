@@ -203,6 +203,7 @@ The `config.yaml` placed inside the bucket will be:
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
 | <a name="input_aws_region"></a> [aws\_region](#input\_aws\_region) | AWS Region | `string` | n/a | yes |
+| <a name="input_aws_profile"></a> [aws\_profile](#input\_aws\_profile) | AWS Profile | `string` | n/a | no |
 | <a name="input_config-file-bucket"></a> [config-file-bucket](#input\_config-file-bucket) | The name of the S3 bucket to place the config.yaml file and the dependencies zip.<br>If the variable is left empty, a new bucket will be created. Otherwise, the bucket needs to preexist. | `string` | `""` | no |
 | <a name="input_config-file-local-path"></a> [config-file-local-path](#input\_config-file-local-path) | Local path to the configuration file. Define this variable only if you want to specify the local configuration file. If none given, make sure to set inputs variable.<br>You can find instructions on how to set the configuration file in https://www.elastic.co/guide/en/esf/current/aws-deploy-elastic-serverless-forwarder.html#sample-s3-config-file. | `string` | `""` | no |
 | <a name="input_continuing-queue"></a> [continuing-queue](#input\_continuing-queue) | Custom BatchSize and MaximumBatchingWindowInSeconds for the ESF SQS Continuing queue | <pre>object({<br>    batch_size                = optional(number, 10)<br>    batching_window_in_second = optional(number, 0)<br>  })</pre> | <pre>{<br>  "batch_size": 10,<br>  "batching_window_in_second": 0<br>}</pre> | no |
