@@ -1,48 +1,68 @@
 # esf-terraform
 
-You can find details on ESF in [Elastic Serverless Forwarder for AWS](https://www.elastic.co/guide/en/esf/current/aws-elastic-serverless-forwarder.html).
-
-This repository contains all necessary resources to deploy ESF. 
-
-# Requirements
-
-- curl
-- terraform
-
+This repository contains necessary resources to deploy Elastic Serverless Forwarder(ESF).
+You can read details about ESF at [Elastic Serverless Forwarder for AWS](https://www.elastic.co/guide/en/esf/current/aws-elastic-serverless-forwarder.html).
 
 ## How to use
+Section below explains how to use this repository to deploy ESF.
+You should first clone this repository.
 
-1. Define secrets and variables in `*.auto.tfvars` files. See `variables.tf` for the list of variables declared or read section [Inputs](#inputs). Example:
-```terraform
-# variables.auto.tfvars
+For example, using SSH:
 
-lambda-name            = "my-esf-lambda"
-release-version        = "lambda-v1.19.0" # See https://github.com/elastic/elastic-serverless-forwarder/tags
-# config-file-bucket     = "my-esf-bucket" # Uncomment if s3 bucket pre-exists
-aws_region             = "eu-central-1"
-# config-file-local-path = "./config.yaml" # Uncomment if local config path is used
-inputs = [
-  {
-    type = "cloudwatch-logs"
-    id   = "<some_arn>"
-    outputs = [
-      {
-        type = "elasticsearch"
-        args = {
-          elasticsearch_url  = "https://url.com"
-          api_key            = "<some_api_key>"
-          es_datastream_name = "logs-esf.cloudwatch-default"
-        }
-      }
-    ]
-  }
-]
+```sh
+git clone git@github.com:elastic/terraform-elastic-esf.git
 ```
 
-Please read section [Inputs configuration](#inputs-configuration) for more details on how to configure the inputs.
+## Prerequisites
+
+Following tools should be installed in your system to utilize this repository:
+
+- curl
+- terraform (v1.12.0 or higher)
+
+### New installation
+
+1. Define secrets and variables in `*.auto.tfvars` files. 
+
+   See `variables.tf` for the list of variables declared or read section [Inputs](#inputs). Example:
+
+   ```terraform
+    # variables.auto.tfvars
+    
+    lambda-name            = "my-esf-lambda"
+    release-version        = "lambda-v1.21.1" # See https://github.com/elastic/elastic-serverless-forwarder/tags
+    # config-file-bucket     = "my-esf-bucket" # Uncomment if s3 bucket pre-exists
+    aws_region             = "eu-central-1"
+    # config-file-local-path = "./config.yaml" # Uncomment if local config path is used
+    inputs = [
+      {
+        type = "cloudwatch-logs"
+        id   = "<some_arn>"
+        outputs = [
+          {
+            type = "elasticsearch"
+            args = {
+              elasticsearch_url  = "https://url.com"
+              api_key            = "<some_api_key>"
+              es_datastream_name = "logs-esf.cloudwatch-default"
+            }
+          }
+        ]
+      }
+    ]
+    ```
+
+   Please read [Inputs configuration](#inputs-configuration) section for more details on how to configure the inputs.
+
 2. Execute `terraform init`
 3. Execute `terraform apply`
 
+### Upgrading to a new version
+
+1. Update the `release-version` value in your `*.auto.tfvars` file to the desired version.
+
+   Latest releases are available at [ESF releases](https://github.com/elastic/elastic-serverless-forwarder/releases)
+2. Execute `terraform apply`
 
 ## Inputs configuration
 

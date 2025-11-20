@@ -170,6 +170,9 @@ resource "aws_s3_object" "config-file" {
 }
 
 resource "terraform_data" "curl-dependencies-zip" {
+  // make the operation dependent on the release version
+  triggers_replace = [var.release-version]
+
   provisioner "local-exec" {
     command = "curl -L -O ${local.dependencies-bucket-url}/${local.dependencies-file}"
   }

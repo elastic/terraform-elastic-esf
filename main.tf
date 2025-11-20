@@ -6,19 +6,19 @@
  */
 
 terraform {
-  required_version = ">= 1.5.6"
+  required_version = ">= 1.12.0"
   required_providers {
     external = {
       source  = "hashicorp/external"
-      version = "~> 2.3.1"
+      version = "~> 2.3.5"
     }
     local = {
       source  = "hashicorp/local"
-      version = "~> 2.4.0"
+      version = "~>2.6.0"
     }
     aws = {
       source  = "hashicorp/aws"
-      version = "~> 5.32.0"
+      version = "~> 6.20"
     }
   }
 }
