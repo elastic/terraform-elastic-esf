@@ -66,7 +66,7 @@ EOT
         api_key                = optional(string)
         username               = optional(string)
         password               = optional(string)
-        es_datastream_name     = string
+        es_datastream_name     = optional(string)
         batch_max_actions      = optional(number)
         batch_max_bytes        = optional(number)
         ssl_assert_fingerprint = optional(string)
