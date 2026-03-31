@@ -7,7 +7,7 @@
 
 ###### Elastic Serverless Forwarder
 locals {
-  dependencies-bucket-url = "http://esf-dependencies.s3.amazonaws.com"
+  dependencies-bucket-url = "https://esf-dependencies.s3.amazonaws.com"
   dependencies-file       = "${var.release-version}.zip"
 
   attach_network_policy = (var.vpc != null ? true : false)
